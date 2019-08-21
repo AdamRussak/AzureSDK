@@ -1,6 +1,26 @@
 <#
-Writen By: Adam Russak
-Version: 0.2.5v
+.SYNOPSIS
+    This script will generate a List of Blob storage using AZ module Ither in Subscription Level or StorageAccount Level 
+.DESCRIPTION
+    Writen By: Adam Russak
+    Version: 0.2.6v
+
+    Long description
+.EXAMPLE
+    Example of how to use this cmdlet
+.EXAMPLE
+    Another example of how to use this cmdlet
+.OUTPUTS
+    Output from this cmdlet (if any)
+.NOTES
+    General notes
+.COMPONENT
+    The component this cmdlet belongs to
+.ROLE
+    The role this cmdlet belongs to
+.FUNCTIONALITY
+    The functionality that best describes this cmdlet
+
 
 Description: 
 
@@ -12,7 +32,6 @@ Description:
 
     - Script assume you are connected to Azure
     - Script uses AZ PowerShell Module
-    
     Process:
     ---------------------------------------------------
     - At the start of the script you will need to select 
@@ -20,9 +39,6 @@ Description:
         - 2: Limit To a specific Storage Account
             - if selected specific Storage Account, you will be requerd to suplly the Storage Account Name 
     - Second Step
-        - select waht to do with empty container (if found):
-            Auto remove, prompt for approve delete, Ignor         
-    - third Step
         - 1: CSV Output
         - 2: HTML Output
         - 3: CLI Output
@@ -41,7 +57,7 @@ function SubscriptionBlobSearch {
     $storageAcc = Get-AzStorageAccount   
     $list = foreach ($Storage in $storageAcc) {
         $SASkey = (Get-AzStorageAccountKey -ResourceGroupName $Storage.ResourceGroupName -AccountName $Storage.storageAccountName).Value[0] 
-        $destinationContext = New-AzStorageContext –StorageAccountName $Storage.storageAccountName -StorageAccountKey $SASkey
+        $destinationContext = New-AzStorageContext -StorageAccountName $Storage.storageAccountName -StorageAccountKey $SASkey
         $Containers = Get-AzStorageContainer -Context $destinationContext
         ForEach ($CList in $Containers) {
             $BlobList = (Get-AzStorageBlob -Context $destinationContext -Container $CList.Name)
@@ -50,29 +66,56 @@ function SubscriptionBlobSearch {
                 $BlobList | ForEach-Object {$length = $length + $_.Length}
                 $containerSize = Format-FileSize($length)
                 [PSCustomObject]@{
-                    "Resource Group" = $storage.ResourceGroupName
-                    "Storage Account" = $storage.storageAccountName
+                    "Resource Group" = $Storage.ResourceGroupName
+                    "Storage Account" = $Storage.storageAccountName
                     "Container" = $CList.name
-                    "Blob Name" =  "-"
-                    "Size" = "-"
+                    "Blob Name" =  " "
+                    "Size" = " "
                     "Total Container Size" = $containerSize
+                    "Status" = " "
                 }
-    
-            ForEach ($Blob in $BlobList){
-                $blobname = (Get-AzStorageBlob -Context $destinationContext -Container $CList.Name) | Where-Object{$_.Name -like $blob.Name}
-                $bloburl = $blobname.ICloudBlob.uri.AbsoluteUri
-                $containerName = $bloburl.Split("{/}")[3]
-                $BlobSize = Format-FileSize($Blob.Length)
-                [PSCustomObject]@{
-                    "Resource Group" = $storage.ResourceGroupName
-                    "Storage Account" = $storage.storageAccountName
-                    "Container" = $containerName
-                    "Blob Name" = $blobname.Name
-                    "Size" = $BlobSize
-                    "Total Container Size" = "-"
+                ForEach ($Blob in $BlobList){
+                    $blobname = (Get-AzStorageBlob -Context $destinationContext -Container $CList.Name) | Where-Object{$_.Name -like $blob.Name}
+                    $bloburl = $blobname.ICloudBlob.uri.AbsoluteUri
+                    $containerName = $bloburl.Split("{/}")[3]
+                    $BlobSize = Format-FileSize($Blob.Length)
+                    if ($Blob.Name.EndsWith(".vhd")) {
+                        if ($Blob.ICloudBlob.Properties.LeaseStatus -eq "Locked") {
+                            [PSCustomObject]@{
+                                "Resource Group" = $storage.ResourceGroupName
+                                "Storage Account" = $storage.storageAccountName
+                                "Container" = $CList.name
+                                "Blob Name" = $blobname.Name
+                                "Size" = $BlobSize
+                                "Total Container Size" = " "
+                                "Status" = "Leased"
+                            }
+                        }
+                        elseif ($Blob.ICloudBlob.Properties.LeaseStatus -eq "Unlocked") {
+                            [PSCustomObject]@{
+                                "Resource Group" = $storage.ResourceGroupName
+                                "Storage Account" = $storage.storageAccountName
+                                "Container" = $CList.name
+                                "Blob Name" = $blobname.Name
+                                "Size" = $BlobSize
+                                "Total Container Size" = " "
+                                "Status" = "Unlocked"
+                            }
+                        }
+                    }
+                    else {
+                        [PSCustomObject]@{
+                            "Resource Group" = $storage.ResourceGroupName
+                            "Storage Account" = $storage.storageAccountName
+                            "Container" = $CList.name
+                            "Blob Name" = $blobname.Name
+                            "Size" = $BlobSize
+                            "Total Container Size" = " "
+                            "Status" = " "
+                        }
+                    }
                 }
             }
-        }
             if ($null -eq $BlobList) {
                 if ($EmptyContainerAcction -like "Ignor") { 
                     [PSCustomObject]@{
@@ -80,8 +123,9 @@ function SubscriptionBlobSearch {
                         "Storage Account" = $storage.storageAccountName
                         "Container" = $CList.Name
                         "Blob Name" = "Empty Container"
-                        "Size" = "-"
-                        "Total Container Size" = "-"
+                        "Size" = " "
+                        "Total Container Size" = " "
+                        "Status" = " "
                     }
                 }
             if ($EmptyContainerAcction -like "Remove") {
@@ -93,6 +137,7 @@ function SubscriptionBlobSearch {
                     "Blob Name" = "Empty Container"
                     "Size" = "Deleted"
                     "Total Container Size" = "Deleted"
+                    "Status" = " "
                 }
             }
             if ($EmptyContainerAcction -like "Prompt") {
@@ -106,6 +151,7 @@ function SubscriptionBlobSearch {
                         "Blob Name" = "Empty Container"
                         "Size" = "Deleted"
                         "Total Container Size" = "Deleted"
+                        "Status" = " "
                     }
                 }
                 if ($CList.name -like $removeCheck) {
@@ -114,14 +160,15 @@ function SubscriptionBlobSearch {
                         "Storage Account" = $storage.storageAccountName
                         "Container" = $CList.Name
                         "Blob Name" = "Empty Container"
-                        "Size" = "-"
-                        "Total Container Size" = "-"
+                        "Size" = " "
+                        "Total Container Size" = " "
+                        "Status" = " "
                     }   
                 }                            
             }
         } 
     }
-}
+    }
     return $list
 }
 function SpecificStorageAccount {
@@ -129,7 +176,7 @@ function SpecificStorageAccount {
     $storageAcc = Get-AzStorageAccount
     $LimitSearch2 = $storageAcc | Where-Object{$_.storageAccountName -like $storageAccInput}  
     $SASkey = (Get-AzStorageAccountKey -ResourceGroupName $LimitSearch2.ResourceGroupName -AccountName $storageAccInput).Value[0] 
-    $destinationContext = New-AzStorageContext –StorageAccountName $storageAccInput -StorageAccountKey $SASkey
+    $destinationContext = New-AzStorageContext -StorageAccountName $storageAccInput -StorageAccountKey $SASkey
     $Containers = Get-AzStorageContainer -Context $destinationContext
     ForEach ($CList in $Containers) {
         $BlobList = (Get-AzStorageBlob -Context $destinationContext -Container $CList.Name)
@@ -141,24 +188,51 @@ function SpecificStorageAccount {
                 "Resource Group" = $LimitSearch2.ResourceGroupName
                 "Storage Account" = $LimitSearch2.storageAccountName
                 "Container" = $CList.name
-                "Blob Name" =  "-"
-                "Size" = "-"
+                "Blob Name" =  " "
+                "Size" = " "
                 "Total Container Size" = $containerSize
+                "Status" = " "
             }
             ForEach ($Blob in $BlobList){
                 $blobname = (Get-AzStorageBlob -Context $destinationContext -Container $CList.Name) | Where-Object{$_.Name -like $blob.Name}
                 $bloburl = $blobname.ICloudBlob.uri.AbsoluteUri
                 $containerName = $bloburl.Split("{/}")[3]
                 $BlobSize = Format-FileSize($Blob.Length)
-                [PSCustomObject]@{
-                    "Resource Group" = $LimitSearch2.ResourceGroupName
-                    "Storage Account" = $LimitSearch2.storageAccountName
-                    "Container" = $containerName
-                    "Blob Name" = $blobname.Name
-                    "Size" = $BlobSize
-                    "Total Container Size" = "-"
+                if ($Blob.Name.EndsWith(".vhd")) {
+                    if ($Blob.ICloudBlob.Properties.LeaseStatus -eq "Locked") {
+                        [PSCustomObject]@{
+                            "Resource Group" = $LimitSearch2.ResourceGroupName
+                            "Storage Account" = $LimitSearch2.storageAccountName
+                            "Container" = $containerName
+                            "Blob Name" = $blobname.Name
+                            "Size" = $BlobSize
+                            "Total Container Size" = " "
+                            "Status" = "Leased"
+                        }
+                    }
+                    if ($Blob.ICloudBlob.Properties.LeaseStatus -eq "Unlocked") {
+                        [PSCustomObject]@{
+                            "Resource Group" = $LimitSearch2.ResourceGroupName
+                            "Storage Account" = $LimitSearch2.storageAccountName
+                            "Container" = $containerName
+                            "Blob Name" = $blobname.Name
+                            "Size" = $BlobSize
+                            "Total Container Size" = " "
+                            "Status" = "Unlocked"
+                        }
+                    }  
                 }
-
+                else {
+                    [PSCustomObject]@{
+                        "Resource Group" = $LimitSearch2.ResourceGroupName
+                        "Storage Account" = $LimitSearch2.storageAccountName
+                        "Container" = $containerName
+                        "Blob Name" = $blobname.Name
+                        "Size" = $BlobSize
+                        "Total Container Size" = " "
+                        "Status" = " "
+                    }
+                }
             }
         }
         if ($null -eq $BlobList) {
@@ -168,20 +242,22 @@ function SpecificStorageAccount {
                     "Storage Account" = $LimitSearch2.storageAccountName
                     "Container" = $CList.Name
                     "Blob Name" = "Empty Container"
-                    "Size" = "-"
-                    "Total Container Size" = "-"
+                    "Size" = " "
+                    "Total Container Size" = " "
+                    "Status" = " "
                 }
             }
             if ($EmptyContainerAcction -like "Remove") {
                 Remove-AzStorageContainer -Name $CList.Name -Context $destinationContext -Force
-                    [PSCustomObject]@{
-                        "Resource Group" = $LimitSearch2.ResourceGroupName
-                        "Storage Account" = $LimitSearch2.storageAccountName
-                        "Container" = $CList.Name
-                        "Blob Name" = "Empty Container"
-                        "Size" = "Deleted"
-                        "Total Container Size" = "Deleted"
-                    }
+                [PSCustomObject]@{
+                    "Resource Group" = $LimitSearch2.ResourceGroupName
+                    "Storage Account" = $LimitSearch2.storageAccountName
+                    "Container" = $CList.Name
+                    "Blob Name" = "Empty Container"
+                    "Size" = "Deleted"
+                    "Total Container Size" = "Deleted"
+                    "Status" = " "
+                }
             }
             if ($EmptyContainerAcction -like "Prompt") {
                 Remove-AzStorageContainer -Name $CList.Name -Context $destinationContext -Confirm
@@ -189,11 +265,12 @@ function SpecificStorageAccount {
                 if ($CList.name -notlike $removeCheck) {
                     [PSCustomObject]@{
                         "Resource Group" = $LimitSearch2.ResourceGroupName
-                            "Storage Account" = $LimitSearch2.storageAccountName
-                            "Container" = $CList.Name
-                            "Blob Name" = "Empty Container"
-                            "Size" = "Deleted"
-                            "Total Container Size" = "Deleted"
+                        "Storage Account" = $LimitSearch2.storageAccountName
+                        "Container" = $CList.Name
+                        "Blob Name" = "Empty Container"
+                        "Size" = "Deleted"
+                        "Total Container Size" = "Deleted"
+                        "Status" = " "
                     }
                 }
                 if ($CList.name -like $removeCheck) {
@@ -202,8 +279,9 @@ function SpecificStorageAccount {
                         "Storage Account" = $LimitSearch2.storageAccountName
                         "Container" = $CList.Name
                         "Blob Name" = "Empty Container"
-                        "Size" = "-"
-                        "Total Container Size" = "-"
+                        "Size" = " "
+                        "Total Container Size" = " "
+                        "Status" = " "
                     }   
                 }
             }
@@ -263,7 +341,7 @@ function header{
  table{
   margin-left: 10px;
  }
- –>
+ ?>
  </style>
 "@
 
@@ -370,12 +448,12 @@ if ($QueryLimits -like "Subscriptions") {
         $TitleHeader = (Get-AzContext).Subscription.Name
         $title = "<h2>Blobs List and Size on Subscription $TitleHeader</h2>"
         $sortBy = "Resource Group"
-        $repPath=(Get-ChildItem env:userprofile).value+"\desktop\Storage.html"
+        $repPath=(Get-ChildItem env:userprofile).value+"\Desktop\Storage.html"
         SubscriptionBlobSearch | Sort-Object -Property @{Expression=$sortBy;Descending=$desc} | ConvertTo-Html -Head $(header) -PreContent $title | Set-Content -Path $repPath -ErrorAction Stop 
     }
     elseif ($Outputmethod -like "CSV") {
         #export to CSV
-        $repPath=(Get-ChildItem env:userprofile).value+"\desktop\Storage.xls"
+        $repPath=(Get-ChildItem env:userprofile).value+"\Desktop\Storage.xls"
         SubscriptionBlobSearch | Export-Csv -Path $repPath -Delimiter `t -Encoding ASCII -NoTypeInformation
     }
     elseif ($Outputmethod -like "CLI") {
