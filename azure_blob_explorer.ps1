@@ -1,7 +1,7 @@
 <#
     Writen By: Adam Russak
     Version: 0.2.6v
-    GitHub Repo: https://github.com/AdamRussak/AzureSDK/blob/master/Azure_Storage_Output.ps1
+    GitHub Repo: https://github.com/AdamRussak/AzureSDK/blob/master/azure_blob_explorer.ps1
 .SYNOPSIS
     This script will generate a List of Blob storage using AZ module Ither in Subscription Level or StorageAccount Level
 .DESCRIPTION
