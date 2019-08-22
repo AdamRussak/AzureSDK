@@ -5,7 +5,9 @@
     + [How To use:](#how-to-use)
 
 # AzureSDK
-Scripts to use in Azure
+*Scripts to use in Azure*
+[Azure Blob Explorer](https://github.com/AdamRussak/AzureSDK/blob/master/azure_blob_explorer.ps1)
+
 ## Azure Storage Explor
 ### Pre-requsit
 - [ ] **Script is using AZ module that need to be installed before using this script**
