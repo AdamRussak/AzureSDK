@@ -1,6 +1,6 @@
 <#
     Writen By: Adam Russak
-    Version: 0.2.6v
+    Version: 0.2.7v
     GitHub Repo: https://github.com/AdamRussak/AzureSDK/blob/master/azure_blob_explorer.ps1
 .SYNOPSIS
     This script will generate a List of Blob storage using AZ module Ither in Subscription Level or StorageAccount Level
@@ -479,6 +479,8 @@ if ($QueryLimits -like "Subscriptions") {
         }
         $repPath=(Get-ChildItem env:userprofile).value+"\Documents\AzureBlob\Storage_" + "${filending}.html"
         SubscriptionBlobSearch | Sort-Object -Property @{Expression=$sortBy;Descending=$true} | ConvertTo-Html -Head $(header) -PreContent $title | Set-Content -Path $repPath -ErrorAction Stop
+        Invoke-Item ((Get-ChildItem env:userprofile).value+"\Documents\AzureBlob")
+        Write-Host "Files Are Saved At $((Get-ChildItem env:userprofile).value+"\Documents\AzureBlob")"
     }
     elseif ($Outputmethod -like "CSV") {
         $filending = Get-Date -Format yyMMddH
@@ -489,6 +491,8 @@ if ($QueryLimits -like "Subscriptions") {
         #export to CSV
         $repPath=(Get-ChildItem env:userprofile).value+"\Documents\AzureBlob\Storage_" + "${filending}.xls"
         SubscriptionBlobSearch | Export-Csv -Path $repPath -Delimiter `t -Encoding ASCII -NoTypeInformation
+        Invoke-Item ((Get-ChildItem env:userprofile).value+"\Documents")
+        Write-Host "Files Are Saved At $((Get-ChildItem env:userprofile).value+"\Documents\AzureBlob")"
     }
     elseif ($Outputmethod -like "CLI") {
         SubscriptionBlobSearch
@@ -507,6 +511,8 @@ if ($QueryLimits -like "Storage Account") {
         $sortBy = "Storage Account"
         $repPath=(Get-ChildItem env:userprofile).value+"\Documents\AzureBlob\Storage_" + "${filending}.html"
         SpecificStorageAccount | Sort-Object -Property @{Expression=$sortBy;Descending=$true} | ConvertTo-Html -Head $(header) -PreContent $title | Set-Content -Path $repPath -ErrorAction Stop
+        Invoke-Item ((Get-ChildItem env:userprofile).value+"\Documents")
+        Write-Host "Files Are Saved At $((Get-ChildItem env:userprofile).value+"\Documents\AzureBlob")"
     }
     elseif ($Outputmethod -like "CSV") {
         $filending = Get-Date -Format yyMMddH
@@ -517,6 +523,8 @@ if ($QueryLimits -like "Storage Account") {
         #export to CSV
         $repPath=(Get-ChildItem env:userprofile).value+"\Documents\AzureBlob\Storage_" + "${filending}.xls"
         SpecificStorageAccount | Export-Csv -Path $repPath -Delimiter `t -Encoding ASCII -NoTypeInformation
+        Invoke-Item ((Get-ChildItem env:userprofile).value+"\Documents")
+        Write-Host "Files Are Saved At $((Get-ChildItem env:userprofile).value+"\Documents\AzureBlob")"
     }
     elseif ($Outputmethod -like "CLI") {
         SpecificStorageAccount
