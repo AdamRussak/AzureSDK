@@ -1,49 +1,30 @@
 <#
-Writen By: Adam Russak
-Version: 0.2.6v
-
+    Writen By: Adam Russak
+    Version: 0.2.6v
+    GitHub Repo: https://github.com/AdamRussak/AzureSDK/blob/master/Azure_Storage_Output.ps1
 .SYNOPSIS
-    Short description
+    This script will generate a List of Blob storage using AZ module Ither in Subscription Level or StorageAccount Level
 .DESCRIPTION
-    Long description
+    Theis scrip generates a report in 2 leves:
+        - entire Subscription
+        - A Specific Storage Account
+    and with 3 Output Options:
+        - HTML Page Report
+        - XLS Sheet Report
+        - Command Line Output
+
+    The Report Contains the Following Info:
+        - Resoucre Group Name
+        - Storage Account Name
+        - Container Name
+        - Blob Name
+        - Blob Size
+        - Container Size
+        - VHD Status (Leased/Unlocked)
 .EXAMPLE
-    Example of how to use this cmdlet
-.EXAMPLE
-    Another example of how to use this cmdlet
-.INPUTS
-    Inputs to this cmdlet (if any)
-.OUTPUTS
-    Output from this cmdlet (if any)
-.NOTES
-    General notes
-.COMPONENT
-    The component this cmdlet belongs to
-.ROLE
-    The role this cmdlet belongs to
+    To Use this script just Run It and follow the CLI information
 .FUNCTIONALITY
-    The functionality that best describes this cmdlet
-
-
-Description:
-
--- The Script will generate an output with all Blobs in storage account with size and container the blob is in.
--- Output parameters:
-    = Container
-    = Blob Name
-    = Size (KB,GB,TB)
-
-    - Script assume you are connected to Azure
-    - Script uses AZ PowerShell Module
-    Process:
-    ---------------------------------------------------
-    - At the start of the script you will need to select
-        - 1: Entire Subscriptions
-        - 2: Limit To a specific Storage Account
-            - if selected specific Storage Account, you will be requerd to suplly the Storage Account Name
-    - Second Step
-        - 1: CSV Output
-        - 2: HTML Output
-        - 3: CLI Output
+    This script is ment to assist IT Managers/ DevOps Teams to Manage ther Storage Usage with Azure Blobs.
 
 #>
 Function Format-FileSize() {
