@@ -1,6 +1,6 @@
 <#
     Writen By: Adam Russak
-    Version: 0.2.7v
+    Version: 0.3.0v
     GitHub Repo: https://github.com/AdamRussak/AzureSDK/blob/master/azure_blob_explorer.ps1
 .SYNOPSIS
     This script will generate a List of Blob storage using AZ module Ither in Subscription Level or StorageAccount Level
@@ -25,7 +25,6 @@
     To Use this script just Run It and follow the CLI information
 .FUNCTIONALITY
     This script is ment to assist IT Managers/ DevOps Teams to Manage ther Storage Usage with Azure Blobs.
-
 #>
 Function Format-FileSize() {
     Param ([object]$BlobSize)
@@ -72,11 +71,16 @@ function ConnectionCheck {
 function SubscriptionBlobSearch {
     $storageAcc = Get-AzStorageAccount
     $list = foreach ($Storage in $storageAcc) {
+        $storageName = $Storage.storageAccountName
+        Write-Verbose -Message "Listed Storage Account $storageName" -Verbose
         $SASkey = (Get-AzStorageAccountKey -ResourceGroupName $Storage.ResourceGroupName -AccountName $Storage.storageAccountName).Value[0]
         $destinationContext = New-AzStorageContext -StorageAccountName $Storage.storageAccountName -StorageAccountKey $SASkey
         $Containers = Get-AzStorageContainer -Context $destinationContext
+        Start-Sleep -Seconds 5
         ForEach ($CList in $Containers) {
             $BlobList = (Get-AzStorageBlob -Context $destinationContext -Container $CList.Name)
+            $containerName = $CList.name
+            Write-Verbose -Message "Listed Container $containerName" -Verbose
             if ($null -ne $BlobList) {
                 $length = 0
                 $BlobList | ForEach-Object {$length = $length + $_.Length}
@@ -91,7 +95,9 @@ function SubscriptionBlobSearch {
                     "Status" = " "
                 }
                 ForEach ($Blob in $BlobList){
-                    $blobname = (Get-AzStorageBlob -Context $destinationContext -Container $CList.Name) | Where-Object{$_.Name -like $blob.Name}
+                    $blobname = $blob.name
+                    Write-Verbose -Message "Listed Blob $blobname" -Verbose
+                    #$blobname = (Get-AzStorageBlob -Context $destinationContext -Container $CList.Name) | Where-Object{$_.Name -like $blob.Name}
                     $BlobSize = Format-FileSize($Blob.Length)
                     if ($Blob.Name.EndsWith(".vhd")) {
                         if ($Blob.ICloudBlob.Properties.LeaseStatus -eq "Locked") {
@@ -99,7 +105,7 @@ function SubscriptionBlobSearch {
                                 "Resource Group" = $storage.ResourceGroupName
                                 "Storage Account" = $storage.storageAccountName
                                 "Container" = $CList.name
-                                "Blob Name" = $blobname.Name
+                                "Blob Name" = $blobname
                                 "Size" = $BlobSize
                                 "Total Container Size" = " "
                                 "Status" = "Leased"
@@ -110,7 +116,7 @@ function SubscriptionBlobSearch {
                                 "Resource Group" = $storage.ResourceGroupName
                                 "Storage Account" = $storage.storageAccountName
                                 "Container" = $CList.name
-                                "Blob Name" = $blobname.Name
+                                "Blob Name" = $blobname
                                 "Size" = $BlobSize
                                 "Total Container Size" = " "
                                 "Status" = "Unlocked"
@@ -122,7 +128,7 @@ function SubscriptionBlobSearch {
                             "Resource Group" = $storage.ResourceGroupName
                             "Storage Account" = $storage.storageAccountName
                             "Container" = $CList.name
-                            "Blob Name" = $blobname.Name
+                            "Blob Name" = $blobname
                             "Size" = $BlobSize
                             "Total Container Size" = " "
                             "Status" = " "
@@ -157,6 +163,7 @@ function SubscriptionBlobSearch {
             if ($EmptyContainerAcction -like "Prompt") {
                 Remove-AzStorageContainer -Name $CList.Name -Context $destinationContext -Confirm
                 $removeCheck = (Get-AzStorageContainer -Name $CList.name -Context $destinationContext).Name
+                Start-Sleep -Seconds 5
                 if ($CList.name -notlike $removeCheck) {
                     [PSCustomObject]@{
                         "Resource Group" = $storage.ResourceGroupName
@@ -202,7 +209,10 @@ function SpecificStorageAccount {
     $SASkey = (Get-AzStorageAccountKey -ResourceGroupName $LimitSearch2.ResourceGroupName -AccountName $storageAccInput).Value[0]
     $destinationContext = New-AzStorageContext -StorageAccountName $storageAccInput -StorageAccountKey $SASkey
     $Containers = Get-AzStorageContainer -Context $destinationContext
+    Start-Sleep -Seconds 5
     $list = ForEach ($CList in $Containers) {
+        $containerName = $CList.name
+        Write-Verbose -Message "Listed Container $containerName" -Verbose
         $BlobList = (Get-AzStorageBlob -Context $destinationContext -Container $CList.Name)
         if ($null -ne $BlobList) {
             $length = 0
@@ -218,8 +228,9 @@ function SpecificStorageAccount {
                 "Status" = "-"
             }
             ForEach ($Blob in $BlobList){
-                $blobname = (Get-AzStorageBlob -Context $destinationContext -Container $CList.Name) | Where-Object{$_.Name -like $blob.Name}
-                $bloburl = $blobname.ICloudBlob.uri.AbsoluteUri
+                $blobname = $blob.name
+                Write-Verbose -Message "Listed Blob $blobname" -Verbose
+                $bloburl = $blob.ICloudBlob.uri.AbsoluteUri
                 $containerName = $bloburl.Split("{/}")[3]
                 $BlobSize = Format-FileSize($Blob.Length)
                 if ($Blob.Name.EndsWith(".vhd")) {
@@ -228,7 +239,7 @@ function SpecificStorageAccount {
                             "Resource Group" = $LimitSearch2.ResourceGroupName
                             "Storage Account" = $LimitSearch2.storageAccountName
                             "Container" = $containerName
-                            "Blob Name" = $blobname.Name
+                            "Blob Name" = $blobname
                             "Size" = $BlobSize
                             "Total Container Size" = "-"
                             "Status" = "Leased"
@@ -239,7 +250,7 @@ function SpecificStorageAccount {
                             "Resource Group" = $LimitSearch2.ResourceGroupName
                             "Storage Account" = $LimitSearch2.storageAccountName
                             "Container" = $containerName
-                            "Blob Name" = $blobname.Name
+                            "Blob Name" = $blobname
                             "Size" = $BlobSize
                             "Total Container Size" = "-"
                             "Status" = "Unlocked"
@@ -251,7 +262,7 @@ function SpecificStorageAccount {
                         "Resource Group" = $LimitSearch2.ResourceGroupName
                         "Storage Account" = $LimitSearch2.storageAccountName
                         "Container" = $containerName
-                        "Blob Name" = $blobname.Name
+                        "Blob Name" = $blobname
                         "Size" = $BlobSize
                         "Total Container Size" = "-"
                         "Status" = "-"
@@ -286,6 +297,7 @@ function SpecificStorageAccount {
             if ($EmptyContainerAcction -like "Prompt") {
                 Remove-AzStorageContainer -Name $CList.Name -Context $destinationContext -Confirm
                 $removeCheck = (Get-AzStorageContainer -Name $CList.name -Context $destinationContext).Name
+                Start-Sleep -Seconds 5
                 if ($CList.name -notlike $removeCheck) {
                     [PSCustomObject]@{
                         "Resource Group" = $LimitSearch2.ResourceGroupName
@@ -368,7 +380,6 @@ function header{
  ?>
  </style>
 "@
-
  return [string] $style
  }
 function QueryLimits {
