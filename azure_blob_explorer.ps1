@@ -97,7 +97,6 @@ function SubscriptionBlobSearch {
                 ForEach ($Blob in $BlobList){
                     $blobname = $blob.name
                     Write-Verbose -Message "Listed Blob $blobname" -Verbose
-                    #$blobname = (Get-AzStorageBlob -Context $destinationContext -Container $CList.Name) | Where-Object{$_.Name -like $blob.Name}
                     $BlobSize = Format-FileSize($Blob.Length)
                     if ($Blob.Name.EndsWith(".vhd")) {
                         if ($Blob.ICloudBlob.Properties.LeaseStatus -eq "Locked") {
