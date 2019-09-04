@@ -9,6 +9,11 @@
 
 [Azure Blob Explorer](https://github.com/AdamRussak/AzureSDK/blob/master/azure_blob_explorer.ps1)
 [Azure Blob Explorer V0.3.1](https://github.com/AdamRussak/AzureSDK/blob/master/azure_blob_explorerV0.3.1.ps1)
+
+### Added in V0.3.1
+- Output level Selection in UI
+  * Full or Container Level
+
 ## Azure Storage Explor
 This script will list out all your Blob Storage in to either: CSV/ HTML/ CLI.
 The script can be run either on the Subscription (all Storage accounts Under that subscription) or on a selected Storage Account.
